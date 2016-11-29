@@ -220,6 +220,7 @@
 				TargetAttributes = {
 					1F4898BB1DE33DAD0077D8DE = {
 						CreatedOnToolsVersion = 8.1;
+						DevelopmentTeam = GSREPL66WM;
 						ProvisioningStyle = Automatic;
 					};
 					1F4898D41DE33DAD0077D8DE = {
@@ -438,6 +439,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = GSREPL66WM;
 				INFOPLIST_FILE = TagLayoutDemo/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.zfq.TagLayoutDemo;
@@ -449,6 +451,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = GSREPL66WM;
 				INFOPLIST_FILE = TagLayoutDemo/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.zfq.TagLayoutDemo;

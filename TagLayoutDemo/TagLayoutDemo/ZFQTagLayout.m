@@ -34,18 +34,23 @@
     [super prepareLayout];
  
     NSInteger itemCount = [self.collectionView numberOfItemsInSection:0];
+    _preferMaxLayoutWidth = self.collectionView.frame.size.width;
     
     if (!_allItems) {
         _allItems = [[NSMutableArray alloc] initWithCapacity:itemCount];
     }
+    [_allItems removeAllObjects];
     
     if (!_allLayoutAttributes) {
         _allLayoutAttributes = [[NSMutableArray alloc] initWithCapacity:itemCount];
     }
+    [_allLayoutAttributes removeAllObjects];
+    
     
     if (!_itemsInfo) {
         _itemsInfo = [[NSMutableArray alloc] init];
     }
+    [_itemsInfo removeAllObjects];
     
     NSAssert(self.layoutDelegate != nil, @"You must set layoutDelegate and implement delegate method!");
     
@@ -166,6 +171,17 @@
 - (CGSize)collectionViewContentSize
 {
     return _contentSize;
+}
+
+- (BOOL)shouldInvalidateLayoutForBoundsChange:(CGRect)newBounds
+{
+    CGSize size = self.collectionView.frame.size;
+    
+    if (CGSizeEqualToSize(size, newBounds.size)) {
+        return NO;
+    } else {
+        return YES;
+    }
 }
 
 @end
