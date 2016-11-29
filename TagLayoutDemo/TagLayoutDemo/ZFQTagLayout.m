@@ -46,7 +46,6 @@
     }
     [_allLayoutAttributes removeAllObjects];
     
-    
     if (!_itemsInfo) {
         _itemsInfo = [[NSMutableArray alloc] init];
     }

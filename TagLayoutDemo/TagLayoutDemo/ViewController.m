@@ -23,7 +23,6 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    // Do any additional setup after loading the view, typically from a nib.
     
     _tmpLabel = [[UILabel alloc] init];
     
@@ -55,6 +54,7 @@
     
     [myCollectionView registerClass:[MyCollectionViewCell class] forCellWithReuseIdentifier:@"a"];
     
+    //load dataSource
     NSString *path = [[NSBundle mainBundle] pathForResource:@"tags" ofType:@"json"];
     NSData *data = [NSData dataWithContentsOfFile:path];
     NSArray *tmpArray = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];

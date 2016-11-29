@@ -16,8 +16,7 @@
     if (self) {
         
         _textLabel = [[UILabel alloc] init];
-//        _textLabel.textAlignment = NSTextAlignmentCenter;
-        _textLabel.backgroundColor = [UIColor orangeColor];
+        _textLabel.textAlignment = NSTextAlignmentCenter;
         [self.contentView addSubview:_textLabel];
         _textLabel.translatesAutoresizingMaskIntoConstraints = NO;
         
