@@ -59,7 +59,6 @@
     CGFloat itemMaxWidth = _preferMaxLayoutWidth - _edgeInsets.left - _edgeInsets.right;
     CGFloat indexOfRow = 0; //当前为第几行
     
-    //1.计算 UICollectionViewLayoutAttributes
     for (NSInteger i = 0; i < itemCount; i++) {
         CGSize itemSize = [_layoutDelegate itemSizeAtRow:i];
         NSAssert(itemSize.width <= itemMaxWidth, @"The width of item is too large!");
@@ -78,6 +77,7 @@
         } else {
             //准备换行
             beginIndexOfCell = i;
+            
             //添加前一行
             [_itemsInfo addObject:@[@(preIndexOfCell),@(beginIndexOfCell - preIndexOfCell)]];
             
