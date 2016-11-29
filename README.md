@@ -1,2 +1,5 @@
 # ZFQTagLayout
 ZFQTagLayout implements the effect of a brick wall
+
+## 效果图
+![(img)](https://github.com/zfq/images/ZFQTagLayout01.gif)

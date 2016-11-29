@@ -10,9 +10,9 @@
 #import "ZFQTagLayout.h"
 #import "MyCollectionViewCell.h"
 
-@interface ViewController () <UICollectionViewDataSource,ZFQTagLayoutDelegate>
+@interface ViewController () <UICollectionViewDataSource,UICollectionViewDelegate,ZFQTagLayoutDelegate>
 {
-    NSArray *_testArray;
+    NSMutableArray *_testArray;
 }
 @end
 
@@ -34,13 +34,16 @@
     layout.layoutDelegate = self;
     UICollectionView *myCollectionView = [[UICollectionView alloc] initWithFrame:CGRectMake(x, 20, layoutWidth, 400) collectionViewLayout:layout];
     myCollectionView.dataSource = self;
+    myCollectionView.delegate = self;
     myCollectionView.backgroundColor = [UIColor lightGrayColor];
+    myCollectionView.allowsSelection = YES;
     [self.view addSubview:myCollectionView];
     [myCollectionView registerClass:[MyCollectionViewCell class] forCellWithReuseIdentifier:@"a"];
     
     NSString *path = [[NSBundle mainBundle] pathForResource:@"tags" ofType:@"json"];
     NSData *data = [NSData dataWithContentsOfFile:path];
-    _testArray = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    NSArray *tmpArray = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    _testArray = [[NSMutableArray alloc] initWithArray:tmpArray];
 }
 
 #pragma mark - ZFQTagLayoutDelegate
@@ -56,7 +59,7 @@
     return size;
 }
 
-
+#pragma mark - UICollectionViewDatasource
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
 {
     return _testArray.count;
@@ -71,6 +74,27 @@
     return cell;
 }
 
+- (void)collectionView:(UICollectionView *)collectionView moveItemAtIndexPath:(NSIndexPath *)sourceIndexPath toIndexPath:(NSIndexPath*)destinationIndexPath
+{
+    [_testArray exchangeObjectAtIndex:sourceIndexPath.row withObjectAtIndex:destinationIndexPath.row];
+}
+
+#pragma mark - UICollectionViewDelegate
+- (BOOL)collectionView:(UICollectionView *)collectionView shouldSelectItemAtIndexPath:(NSIndexPath *)indexPath
+{
+    return YES;
+}
+
+- (void)collectionView:(UICollectionView *)collectionView didHighlightItemAtIndexPath:(NSIndexPath *)indexPath
+{
+    [collectionView beginInteractiveMovementForItemAtIndexPath:indexPath];
+}
+
+- (void)collectionView:(UICollectionView *)collectionView didUnhighlightItemAtIndexPath:(NSIndexPath *)indexPath
+{
+//    updateInteractiveMovementTargetPosition
+    [collectionView endInteractiveMovement];
+}
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
