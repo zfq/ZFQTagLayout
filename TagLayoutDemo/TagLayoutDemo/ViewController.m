@@ -48,7 +48,7 @@
     NSDictionary *views = @{@"collectionView":myCollectionView};
     NSDictionary *metrics = @{@"width":@(layoutWidth),@"margin":@(x),@"height":@400};
     NSArray *hCons = [NSLayoutConstraint constraintsWithVisualFormat:@"H:|-margin-[collectionView]-margin-|" options:0 metrics:metrics views:views];
-    NSArray *vCons = [NSLayoutConstraint constraintsWithVisualFormat:@"V:|-20-[collectionView]-100-|" options:0 metrics:metrics views:views];
+    NSArray *vCons = [NSLayoutConstraint constraintsWithVisualFormat:@"V:|-20-[collectionView]-400-|" options:0 metrics:metrics views:views];
     [self.view addConstraints:hCons];
     [self.view addConstraints:vCons];
     
@@ -122,6 +122,11 @@
 - (void)collectionView:(UICollectionView *)collectionView moveItemAtIndexPath:(NSIndexPath *)sourceIndexPath toIndexPath:(NSIndexPath*)destinationIndexPath
 {
     [_testArray exchangeObjectAtIndex:sourceIndexPath.row withObjectAtIndex:destinationIndexPath.row];
+}
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView
+{
+//    NSLog(@"%@",NSStringFromCGRect(scrollView.bounds));
 }
 
 #pragma mark - UICollectionViewDelegate

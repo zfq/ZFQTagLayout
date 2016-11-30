@@ -153,13 +153,90 @@
 
 - (NSArray<UICollectionViewLayoutAttributes *> *)layoutAttributesForElementsInRect:(CGRect)rect
 {
+    //获取所有可见的cell
+//    NSArray *array = _allLayoutAttributes;
+    NSArray *array = [self allVisibleAttributes:rect];
     NSMutableArray *mutableArray = [[NSMutableArray alloc] init];
-    [_allLayoutAttributes enumerateObjectsUsingBlock:^(UICollectionViewLayoutAttributes * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+    [array enumerateObjectsUsingBlock:^(UICollectionViewLayoutAttributes * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         if (CGRectIntersectsRect(rect, obj.frame)) {
             [mutableArray addObject:obj];
         }
     }];
     return mutableArray;
+}
+
+- (NSArray<UICollectionViewLayoutAttributes *> *)allVisibleAttributes:(CGRect)rect
+{
+    CGFloat minY = rect.origin.y;
+    CGFloat maxY = CGRectGetMaxY(rect);
+    //二分查找 minY、maxY分别落在哪一行
+    NSInteger beginRow = [self binarySearchItem:minY isBegin:YES];
+    NSInteger endRow = [self binarySearchItem:maxY isBegin:NO];
+//    NSAssert(beginRow >= 0 && endRow >= 0, @"未找到指定行");
+    if (!(beginRow >= 0 && endRow >= 0)) {
+        NSLog(@"未找到指定行");
+        return nil;
+    }
+    
+    NSInteger beginIndex = [_itemsInfo[beginRow][0] integerValue];
+    NSInteger endIndex = [_itemsInfo[endRow][0] integerValue] + [_itemsInfo[endRow][1] integerValue] - 1;
+    
+    NSMutableArray *array = [NSMutableArray arrayWithCapacity:(endIndex - beginIndex + 1)];
+    for (NSInteger i = beginIndex; i <= endIndex; i++) {
+        [array addObject:(_allLayoutAttributes[i])];
+    }
+    
+    return array;
+}
+
+- (NSInteger)binarySearchItem:(CGFloat)y isBegin:(BOOL)isBegin
+{
+    NSInteger left = 0,right = _itemsInfo.count - 1;
+    
+    while (left < right) {
+        NSInteger mid = (left + right)/2;
+        NSInteger index = [_itemsInfo[mid][0] integerValue];
+        CGRect frame = _allLayoutAttributes[index].frame;
+        
+        if (isBegin) {
+            if (y < frame.origin.y - _verticalPadding) {
+                right = mid - 1;
+            } else if (y > CGRectGetMaxY(frame)) {
+                left = mid + 1;
+            } else {
+                printf("找到数字,位置为:%ld\n",mid);
+                return mid;
+            }
+        } else {
+            if (y < frame.origin.y) {
+                right = mid - 1;
+            } else if (y > CGRectGetMaxY(frame) + _verticalPadding) {
+                left = mid + 1;
+            } else {
+                printf("找到数字,位置为:%ld\n",mid);
+                return mid;
+            }
+        }
+    }
+    
+    CGRect frame = _allLayoutAttributes[left].frame;
+    if (isBegin) {
+        if (y > CGRectGetMaxY(frame)) {
+            printf("未找到数字");
+            return -1;
+        } else {
+            printf("找到数字,位置为:%ld\n",left);
+            return left;
+        }
+    } else {
+        if (y < frame.origin.y) {
+            printf("未找到数字");
+            return -1;
+        } else {
+            printf("找到数字,位置为:%ld\n",left);
+            return left;
+        }
+    }
 }
 
 - (UICollectionViewLayoutAttributes *)layoutAttributesForItemAtIndexPath:(NSIndexPath *)indexPath

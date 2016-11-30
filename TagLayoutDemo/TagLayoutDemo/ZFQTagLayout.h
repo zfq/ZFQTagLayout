@@ -25,8 +25,8 @@
 @interface ZFQTagLayout : UICollectionViewLayout
 
 @property (nonatomic, assign) UIEdgeInsets edgeInsets;
-@property (nonatomic,assign) CGFloat horizontalPadding;
-@property (nonatomic,assign) CGFloat verticalPadding;
+@property (nonatomic,assign) CGFloat horizontalPadding; //列与列之间的间距
+@property (nonatomic,assign) CGFloat verticalPadding;   //行与行之间的间距
 
 
 /**
