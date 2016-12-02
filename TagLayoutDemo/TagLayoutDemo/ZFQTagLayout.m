@@ -314,6 +314,7 @@
     
     CGPoint center = _snapshotView.center;
     _offset = CGSizeMake(center.x - p.x, center.y - p.y);
+    _preAvailableRow = -1;
 }
 
 - (void)ZFQUpdateMovementTargetPosition:(CGPoint)p
@@ -324,19 +325,19 @@
     NSIndexPath *indexPath = [collectionView indexPathForItemAtPoint:p];
     if (!indexPath) return;
     if (indexPath.row == _preAvailableRow) return;
+    if (_originSelectedIndexPath.row == indexPath.row) return;
     
     //1.更新数据源，就是把 _originSelectedIndexPath 删除掉，然后 将其插入到indexPath
     [self.layoutDelegate moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
     //2.重新计算attr
     [self calculateLayoutAttributes];
-    
-    //4.更新UI：删除旧的item, 在新的地方insert一个item
+    //3.更新UI：删除旧的item, 在新的地方insert一个item
     [collectionView performBatchUpdates:^{
         [collectionView moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
     } completion:^(BOOL finished) {
-        _originSelectedIndexPath = indexPath;
+        
     }];
-    
+    _originSelectedIndexPath = indexPath;
     _preAvailableRow = indexPath.row;
 }
 
@@ -348,22 +349,19 @@
         [self ZFQCancelMovement];
         return;
     }
-    
-    //1.更新数据源，就是把 _originSelectedIndexPath 删除掉，然后 将其插入到indexPath
-//    [self.layoutDelegate moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
-    //2.重新计算attr
-//    [self calculateLayoutAttributes];
-    //3.将截图放置到新的位置(动画效果)
+
+    //1.将截图放置到新的位置(动画效果)
     [UIView animateWithDuration:0.25 animations:^{
        _snapshotView.center = _allLayoutAttributes[indexPath.row].center;
     }];
-    //4.更新UI：删除旧的item, 在新的地方insert一个item
+    //2.在移动动画完成后就移除截图
     [collectionView performBatchUpdates:^{
-//        [collectionView moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
+
     } completion:^(BOOL finished) {
-        //5.移除截图
+        //3.移除截图
         UIView *cell = [collectionView cellForItemAtIndexPath:_originSelectedIndexPath];
         cell.hidden = NO;
+        
         [_snapshotView removeFromSuperview];
         _snapshotView = nil;
         
@@ -388,6 +386,7 @@
             //3.移除截图
             [_snapshotView removeFromSuperview];
             _snapshotView = nil;
+            _preAvailableRow = -1;
         }
     }];
 }
