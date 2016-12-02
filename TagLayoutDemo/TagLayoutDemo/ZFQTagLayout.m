@@ -19,6 +19,7 @@
     UIView *_snapshotView;
     NSIndexPath *_originSelectedIndexPath;   //选中的row
     CGSize _offset;
+    NSInteger _preAvailableRow;
 }
 
 @end
@@ -29,7 +30,7 @@
 {
     self = [super init];
     if (self) {
-        
+        _preAvailableRow = -1;
     }
     return self;
 }
@@ -239,7 +240,6 @@
             } else if (y > CGRectGetMaxY(frame)) {
                 left = mid + 1;
             } else {
-//                printf("找到数字,位置为:%ld\n",mid);
                 return mid;
             }
         } else {
@@ -248,7 +248,6 @@
             } else if (y > CGRectGetMaxY(frame) + _verticalPadding) {
                 left = mid + 1;
             } else {
-//                printf("找到数字,位置为:%ld\n",mid);
                 return mid;
             }
         }
@@ -257,18 +256,14 @@
     CGRect frame = _allLayoutAttributes[left].frame;
     if (isBegin) {
         if (y > CGRectGetMaxY(frame)) {
-            printf("未找到数字");
             return -1;
         } else {
-//            printf("找到数字,位置为:%ld\n",left);
             return left;
         }
     } else {
         if (y < frame.origin.y) {
-            printf("未找到数字");
             return -1;
         } else {
-//            printf("找到数字,位置为:%ld\n",left);
             return left;
         }
     }
@@ -324,6 +319,25 @@
 - (void)ZFQUpdateMovementTargetPosition:(CGPoint)p
 {
     _snapshotView.center = CGPointMake(p.x + _offset.width, p.y + _offset.height);
+    
+    UICollectionView *collectionView = self.collectionView;
+    NSIndexPath *indexPath = [collectionView indexPathForItemAtPoint:p];
+    if (!indexPath) return;
+    if (indexPath.row == _preAvailableRow) return;
+    
+    //1.更新数据源，就是把 _originSelectedIndexPath 删除掉，然后 将其插入到indexPath
+    [self.layoutDelegate moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
+    //2.重新计算attr
+    [self calculateLayoutAttributes];
+    
+    //4.更新UI：删除旧的item, 在新的地方insert一个item
+    [collectionView performBatchUpdates:^{
+        [collectionView moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
+    } completion:^(BOOL finished) {
+        _originSelectedIndexPath = indexPath;
+    }];
+    
+    _preAvailableRow = indexPath.row;
 }
 
 - (void)ZFQEndMovementTargetPosition:(CGPoint)p
@@ -336,19 +350,19 @@
     }
     
     //1.更新数据源，就是把 _originSelectedIndexPath 删除掉，然后 将其插入到indexPath
-    [self.layoutDelegate moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
+//    [self.layoutDelegate moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
     //2.重新计算attr
-    [self calculateLayoutAttributes];
+//    [self calculateLayoutAttributes];
     //3.将截图放置到新的位置(动画效果)
     [UIView animateWithDuration:0.25 animations:^{
        _snapshotView.center = _allLayoutAttributes[indexPath.row].center;
     }];
     //4.更新UI：删除旧的item, 在新的地方insert一个item
     [collectionView performBatchUpdates:^{
-        [collectionView moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
+//        [collectionView moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
     } completion:^(BOOL finished) {
         //5.移除截图
-        UIView *cell = [collectionView cellForItemAtIndexPath:indexPath];
+        UIView *cell = [collectionView cellForItemAtIndexPath:_originSelectedIndexPath];
         cell.hidden = NO;
         [_snapshotView removeFromSuperview];
         _snapshotView = nil;
