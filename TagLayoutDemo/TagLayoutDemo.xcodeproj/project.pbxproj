@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1F424F661DF04B4200DC6C8A /* NSArray+ ZXPUnicode.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F424F601DF04B4200DC6C8A /* NSArray+ ZXPUnicode.m */; };
+		1F424F671DF04B4200DC6C8A /* NSDictionary+ZXPUnicode.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F424F631DF04B4200DC6C8A /* NSDictionary+ZXPUnicode.m */; };
+		1F424F681DF04B4200DC6C8A /* NSObject+ZXPUnicode.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F424F651DF04B4200DC6C8A /* NSObject+ZXPUnicode.m */; };
 		1F4898C11DE33DAD0077D8DE /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F4898C01DE33DAD0077D8DE /* main.m */; };
 		1F4898C41DE33DAD0077D8DE /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F4898C31DE33DAD0077D8DE /* AppDelegate.m */; };
 		1F4898C71DE33DAD0077D8DE /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F4898C61DE33DAD0077D8DE /* ViewController.m */; };
@@ -38,6 +41,12 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		1F424F601DF04B4200DC6C8A /* NSArray+ ZXPUnicode.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSArray+ ZXPUnicode.m"; sourceTree = "<group>"; };
+		1F424F611DF04B4200DC6C8A /* NSArray+ZXPUnicode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSArray+ZXPUnicode.h"; sourceTree = "<group>"; };
+		1F424F621DF04B4200DC6C8A /* NSDictionary+ZXPUnicode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+ZXPUnicode.h"; sourceTree = "<group>"; };
+		1F424F631DF04B4200DC6C8A /* NSDictionary+ZXPUnicode.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+ZXPUnicode.m"; sourceTree = "<group>"; };
+		1F424F641DF04B4200DC6C8A /* NSObject+ZXPUnicode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSObject+ZXPUnicode.h"; sourceTree = "<group>"; };
+		1F424F651DF04B4200DC6C8A /* NSObject+ZXPUnicode.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSObject+ZXPUnicode.m"; sourceTree = "<group>"; };
 		1F4898BC1DE33DAD0077D8DE /* TagLayoutDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TagLayoutDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1F4898C01DE33DAD0077D8DE /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		1F4898C21DE33DAD0077D8DE /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -86,9 +95,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1F424F5F1DF04B4200DC6C8A /* ZXPUnicode */ = {
+			isa = PBXGroup;
+			children = (
+				1F424F601DF04B4200DC6C8A /* NSArray+ ZXPUnicode.m */,
+				1F424F611DF04B4200DC6C8A /* NSArray+ZXPUnicode.h */,
+				1F424F621DF04B4200DC6C8A /* NSDictionary+ZXPUnicode.h */,
+				1F424F631DF04B4200DC6C8A /* NSDictionary+ZXPUnicode.m */,
+				1F424F641DF04B4200DC6C8A /* NSObject+ZXPUnicode.h */,
+				1F424F651DF04B4200DC6C8A /* NSObject+ZXPUnicode.m */,
+			);
+			path = ZXPUnicode;
+			sourceTree = "<group>";
+		};
 		1F4898B31DE33DAD0077D8DE = {
 			isa = PBXGroup;
 			children = (
+				1F424F5F1DF04B4200DC6C8A /* ZXPUnicode */,
 				1F4898BE1DE33DAD0077D8DE /* TagLayoutDemo */,
 				1F4898D81DE33DAD0077D8DE /* TagLayoutDemoTests */,
 				1F4898E31DE33DAD0077D8DE /* TagLayoutDemoUITests */,
@@ -290,6 +313,9 @@
 			files = (
 				1F4898F41DE33E0A0077D8DE /* ZFQTagLayout.m in Sources */,
 				1F4898C71DE33DAD0077D8DE /* ViewController.m in Sources */,
+				1F424F671DF04B4200DC6C8A /* NSDictionary+ZXPUnicode.m in Sources */,
+				1F424F661DF04B4200DC6C8A /* NSArray+ ZXPUnicode.m in Sources */,
+				1F424F681DF04B4200DC6C8A /* NSObject+ZXPUnicode.m in Sources */,
 				1F4898C41DE33DAD0077D8DE /* AppDelegate.m in Sources */,
 				1F4898C11DE33DAD0077D8DE /* main.m in Sources */,
 				1FBC14421DEAA9FB00B62E2C /* MyCollectionViewCell.m in Sources */,

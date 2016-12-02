@@ -19,14 +19,24 @@
  */
 - (CGSize)itemSizeAtRow:(NSUInteger)row;
 
+
+/**
+ update datasource,you should exchange both among datasource
+
+ @param fromIndexPath The indexPath of the selected cell
+ @param toIndexPath IndexPath of the cell can be moved to
+ */
+- (void)moveItemAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath;
+- (void)didMoveItemAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath;
+
 @end
 
 
 @interface ZFQTagLayout : UICollectionViewLayout
 
-@property (nonatomic, assign) UIEdgeInsets edgeInsets;
-@property (nonatomic,assign) CGFloat horizontalPadding; //列与列之间的间距
-@property (nonatomic,assign) CGFloat verticalPadding;   //行与行之间的间距
+@property (nonatomic, assign) UIEdgeInsets edgeInsets;  //内容填充
+@property (nonatomic, assign) CGFloat horizontalPadding; //列与列之间的间距
+@property (nonatomic, assign) CGFloat verticalPadding;   //行与行之间的间距
 
 
 /**
@@ -42,3 +52,7 @@
 
 @end
 
+
+@interface UIView(ZFQTagLayout)
+- (UIView *)zfqSnapshotImg;
+@end

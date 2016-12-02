@@ -14,6 +14,11 @@
     NSMutableArray<UICollectionViewCell *> *_allItems;
     NSMutableArray<UICollectionViewLayoutAttributes *> *_allLayoutAttributes;
     NSMutableArray<NSArray *> *_itemsInfo;
+    
+    UILongPressGestureRecognizer *_longPressGesture;
+    UIView *_snapshotView;
+    NSIndexPath *_originSelectedIndexPath;   //选中的row
+    CGSize _offset;
 }
 
 @end
@@ -33,6 +38,12 @@
 {
     [super prepareLayout];
  
+    [self calculateLayoutAttributes];
+    [self addLongPressGestureIfNeeded];
+}
+
+- (void)calculateLayoutAttributes
+{
     NSInteger itemCount = [self.collectionView numberOfItemsInSection:0];
     _preferMaxLayoutWidth = self.collectionView.frame.size.width;
     
@@ -154,8 +165,8 @@
 - (NSArray<UICollectionViewLayoutAttributes *> *)layoutAttributesForElementsInRect:(CGRect)rect
 {
     //获取所有可见的cell
-//    NSArray *array = _allLayoutAttributes;
-    NSArray *array = [self allVisibleAttributes:rect];
+    NSArray *array = _allLayoutAttributes;
+//    NSArray *array = [self allVisibleAttributesInRect:rect];
     NSMutableArray *mutableArray = [[NSMutableArray alloc] init];
     [array enumerateObjectsUsingBlock:^(UICollectionViewLayoutAttributes * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         if (CGRectIntersectsRect(rect, obj.frame)) {
@@ -165,14 +176,37 @@
     return mutableArray;
 }
 
-- (NSArray<UICollectionViewLayoutAttributes *> *)allVisibleAttributes:(CGRect)rect
+- (UICollectionViewLayoutAttributes *)layoutAttributesForItemAtIndexPath:(NSIndexPath *)indexPath
+{
+    return _allLayoutAttributes[indexPath.row];
+}
+
+- (CGSize)collectionViewContentSize
+{
+    return _contentSize;
+}
+
+//处理横竖屏切换
+- (BOOL)shouldInvalidateLayoutForBoundsChange:(CGRect)newBounds
+{
+    CGSize size = self.collectionView.frame.size;
+    
+    if (CGSizeEqualToSize(size, newBounds.size)) {
+        return NO;
+    } else {
+        return YES;
+    }
+}
+
+- (NSArray<UICollectionViewLayoutAttributes *> *)allVisibleAttributesInRect:(CGRect)rect
 {
     CGFloat minY = rect.origin.y;
     CGFloat maxY = CGRectGetMaxY(rect);
+    
     //二分查找 minY、maxY分别落在哪一行
     NSInteger beginRow = [self binarySearchItem:minY isBegin:YES];
     NSInteger endRow = [self binarySearchItem:maxY isBegin:NO];
-//    NSAssert(beginRow >= 0 && endRow >= 0, @"未找到指定行");
+
     if (!(beginRow >= 0 && endRow >= 0)) {
         NSLog(@"未找到指定行");
         return nil;
@@ -189,6 +223,7 @@
     return array;
 }
 
+#pragma mark - Private
 - (NSInteger)binarySearchItem:(CGFloat)y isBegin:(BOOL)isBegin
 {
     NSInteger left = 0,right = _itemsInfo.count - 1;
@@ -204,7 +239,7 @@
             } else if (y > CGRectGetMaxY(frame)) {
                 left = mid + 1;
             } else {
-                printf("找到数字,位置为:%ld\n",mid);
+//                printf("找到数字,位置为:%ld\n",mid);
                 return mid;
             }
         } else {
@@ -213,7 +248,7 @@
             } else if (y > CGRectGetMaxY(frame) + _verticalPadding) {
                 left = mid + 1;
             } else {
-                printf("找到数字,位置为:%ld\n",mid);
+//                printf("找到数字,位置为:%ld\n",mid);
                 return mid;
             }
         }
@@ -225,7 +260,7 @@
             printf("未找到数字");
             return -1;
         } else {
-            printf("找到数字,位置为:%ld\n",left);
+//            printf("找到数字,位置为:%ld\n",left);
             return left;
         }
     } else {
@@ -233,30 +268,130 @@
             printf("未找到数字");
             return -1;
         } else {
-            printf("找到数字,位置为:%ld\n",left);
+//            printf("找到数字,位置为:%ld\n",left);
             return left;
         }
     }
 }
 
-- (UICollectionViewLayoutAttributes *)layoutAttributesForItemAtIndexPath:(NSIndexPath *)indexPath
+//添加手势
+- (void)addLongPressGestureIfNeeded
 {
-    return _allLayoutAttributes[indexPath.row];
+    if (!_longPressGesture) {
+        _longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPressGesture:)];
+        [self.collectionView addGestureRecognizer:_longPressGesture];
+    }
 }
 
-- (CGSize)collectionViewContentSize
+- (void)longPressGesture:(UILongPressGestureRecognizer *)gesture
 {
-    return _contentSize;
+    UICollectionView *tmpView = (UICollectionView *)gesture.view;
+    CGPoint p = [gesture locationInView:tmpView];
+    switch (gesture.state) {
+        case UIGestureRecognizerStateBegan: {
+            [self ZFQBeginMovementFromPositon:p];
+        } break;
+        case UIGestureRecognizerStateChanged: {
+            [self ZFQUpdateMovementTargetPosition:p];
+        } break;
+        case UIGestureRecognizerStateEnded: {
+            [self ZFQEndMovementTargetPosition:p];
+        }  break;
+        default:
+            [self ZFQCancelMovement];
+            break;
+    }
 }
 
-- (BOOL)shouldInvalidateLayoutForBoundsChange:(CGRect)newBounds
+- (void)ZFQBeginMovementFromPositon:(CGPoint)p
 {
-    CGSize size = self.collectionView.frame.size;
+    //为item创建截图，然后添加到collectionView上
+    NSIndexPath *indexPath = [self.collectionView indexPathForItemAtPoint:p];
+    UIView *cell = [self.collectionView cellForItemAtIndexPath:indexPath];
+    _snapshotView = [cell zfqSnapshotImg];
+    _snapshotView.frame = cell.frame;
+    [self.collectionView addSubview:_snapshotView];
     
-    if (CGSizeEqualToSize(size, newBounds.size)) {
-        return NO;
+    //然后将选中的cell给隐藏掉
+    cell.hidden = YES;
+    
+    _originSelectedIndexPath = indexPath;
+    
+    CGPoint center = _snapshotView.center;
+    _offset = CGSizeMake(center.x - p.x, center.y - p.y);
+}
+
+- (void)ZFQUpdateMovementTargetPosition:(CGPoint)p
+{
+    _snapshotView.center = CGPointMake(p.x + _offset.width, p.y + _offset.height);
+}
+
+- (void)ZFQEndMovementTargetPosition:(CGPoint)p
+{
+    UICollectionView *collectionView = self.collectionView;
+    NSIndexPath *indexPath = [collectionView indexPathForItemAtPoint:p];
+    if (!indexPath) {
+        [self ZFQCancelMovement];
+        return;
+    }
+    
+    //1.更新数据源，就是把 _originSelectedIndexPath 删除掉，然后 将其插入到indexPath
+    [self.layoutDelegate moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
+    //2.重新计算attr
+    [self calculateLayoutAttributes];
+    //3.将截图放置到新的位置(动画效果)
+    [UIView animateWithDuration:0.25 animations:^{
+       _snapshotView.center = _allLayoutAttributes[indexPath.row].center;
+    }];
+    //4.更新UI：删除旧的item, 在新的地方insert一个item
+    [collectionView performBatchUpdates:^{
+        [collectionView moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
+    } completion:^(BOOL finished) {
+        //5.移除截图
+        UIView *cell = [collectionView cellForItemAtIndexPath:indexPath];
+        cell.hidden = NO;
+        [_snapshotView removeFromSuperview];
+        _snapshotView = nil;
+        
+        if ([self.layoutDelegate respondsToSelector:@selector(didMoveItemAtIndexPath:toIndexPath:)]) {
+            [self.layoutDelegate didMoveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
+        }
+    }];
+}
+
+- (void)ZFQCancelMovement
+{
+    UICollectionViewLayoutAttributes *attr = _allLayoutAttributes[_originSelectedIndexPath.row];
+    UIView *cell = [self.collectionView cellForItemAtIndexPath:_originSelectedIndexPath];
+    
+    //1.将截图恢复到原始位置
+    [UIView animateWithDuration:0.25 animations:^{
+        _snapshotView.center = attr.center;
+    } completion:^(BOOL finished) {
+        if (finished) {
+            //2.设置hidden为NO
+            cell.hidden = NO;
+            //3.移除截图
+            [_snapshotView removeFromSuperview];
+            _snapshotView = nil;
+        }
+    }];
+}
+
+@end
+
+@implementation UIView(ZFQTagLayout)
+
+- (UIView *)zfqSnapshotImg
+{
+    if ([self respondsToSelector:@selector(snapshotViewAfterScreenUpdates:)]) {
+        return [self snapshotViewAfterScreenUpdates:YES];
     } else {
-        return YES;
+        UIGraphicsBeginImageContextWithOptions(self.bounds.size, self.opaque, [UIScreen mainScreen].scale);
+        [self.layer renderInContext:UIGraphicsGetCurrentContext()];
+        UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+        return [[UIImageView alloc] initWithImage:img];
     }
 }
 

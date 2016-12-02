@@ -17,6 +17,7 @@
     
     UILabel *_tmpLabel;
 }
+@property (nonatomic,strong) UICollectionView *collectionView;
 @end
 
 @implementation ViewController
@@ -42,7 +43,10 @@
     myCollectionView.delegate = self;
     myCollectionView.backgroundColor = [UIColor lightGrayColor];
     myCollectionView.allowsSelection = YES;
+    myCollectionView.showsVerticalScrollIndicator = NO;
+    myCollectionView.showsHorizontalScrollIndicator = NO;
     [self.view addSubview:myCollectionView];
+    self.collectionView = myCollectionView;
     
     myCollectionView.translatesAutoresizingMaskIntoConstraints = NO;
     NSDictionary *views = @{@"collectionView":myCollectionView};
@@ -61,8 +65,8 @@
     _testArray = [[NSMutableArray alloc] initWithArray:tmpArray];
     
     //add long gesture to UICollectionView
-    _longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPressGesture:)];
-    [myCollectionView addGestureRecognizer:_longPressGesture];
+//    _longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPressGesture:)];
+//    [myCollectionView addGestureRecognizer:_longPressGesture];
 }
 
 - (void)longPressGesture:(UIGestureRecognizer *)gesture
@@ -79,6 +83,7 @@
         } break;
         case UIGestureRecognizerStateEnded: {
             [tmpView endInteractiveMovement];
+//            [tmpView reloadData];
         }  break;
         default:
             [tmpView cancelInteractiveMovement];
@@ -104,6 +109,22 @@
     return _tmpLabel.frame.size;
 }
 
+- (void)moveItemAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath
+{
+    id source = _testArray[fromIndexPath.row];
+    [_testArray removeObjectAtIndex:fromIndexPath.row];
+    [_testArray insertObject:source atIndex:toIndexPath.row];
+//    [_testArray exchangeObjectAtIndex:fromIndexPath.row withObjectAtIndex:toIndexPath.row];
+}
+
+- (void)didMoveItemAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath
+{
+    NSLog(@"完成排序");
+    for (NSString *str in _testArray) {
+        NSLog(@"%@",str);
+    }
+}
+
 #pragma mark - UICollectionViewDatasource
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
 {
@@ -119,15 +140,11 @@
     return cell;
 }
 
-- (void)collectionView:(UICollectionView *)collectionView moveItemAtIndexPath:(NSIndexPath *)sourceIndexPath toIndexPath:(NSIndexPath*)destinationIndexPath
-{
-    [_testArray exchangeObjectAtIndex:sourceIndexPath.row withObjectAtIndex:destinationIndexPath.row];
-}
+//- (void)collectionView:(UICollectionView *)collectionView moveItemAtIndexPath:(NSIndexPath *)sourceIndexPath toIndexPath:(NSIndexPath*)destinationIndexPath
+//{
+//    [_testArray exchangeObjectAtIndex:sourceIndexPath.row withObjectAtIndex:destinationIndexPath.row];
+//}
 
-- (void)scrollViewDidScroll:(UIScrollView *)scrollView
-{
-//    NSLog(@"%@",NSStringFromCGRect(scrollView.bounds));
-}
 
 #pragma mark - UICollectionViewDelegate
 //- (BOOL)collectionView:(UICollectionView *)collectionView shouldSelectItemAtIndexPath:(NSIndexPath *)indexPath
@@ -150,4 +167,7 @@
 }
 
 
+- (IBAction)tapBtnAction:(id)sender {
+    [self.collectionView reloadData];
+}
 @end
