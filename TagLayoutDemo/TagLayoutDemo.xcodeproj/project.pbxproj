@@ -10,6 +10,7 @@
 		1F424F661DF04B4200DC6C8A /* NSArray+ ZXPUnicode.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F424F601DF04B4200DC6C8A /* NSArray+ ZXPUnicode.m */; };
 		1F424F671DF04B4200DC6C8A /* NSDictionary+ZXPUnicode.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F424F631DF04B4200DC6C8A /* NSDictionary+ZXPUnicode.m */; };
 		1F424F681DF04B4200DC6C8A /* NSObject+ZXPUnicode.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F424F651DF04B4200DC6C8A /* NSObject+ZXPUnicode.m */; };
+		1F424F6A1DF18AC100DC6C8A /* tags copy.json in Resources */ = {isa = PBXBuildFile; fileRef = 1F424F691DF18AC100DC6C8A /* tags copy.json */; };
 		1F4898C11DE33DAD0077D8DE /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F4898C01DE33DAD0077D8DE /* main.m */; };
 		1F4898C41DE33DAD0077D8DE /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F4898C31DE33DAD0077D8DE /* AppDelegate.m */; };
 		1F4898C71DE33DAD0077D8DE /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F4898C61DE33DAD0077D8DE /* ViewController.m */; };
@@ -47,6 +48,7 @@
 		1F424F631DF04B4200DC6C8A /* NSDictionary+ZXPUnicode.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+ZXPUnicode.m"; sourceTree = "<group>"; };
 		1F424F641DF04B4200DC6C8A /* NSObject+ZXPUnicode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSObject+ZXPUnicode.h"; sourceTree = "<group>"; };
 		1F424F651DF04B4200DC6C8A /* NSObject+ZXPUnicode.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSObject+ZXPUnicode.m"; sourceTree = "<group>"; };
+		1F424F691DF18AC100DC6C8A /* tags copy.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "tags copy.json"; sourceTree = "<group>"; };
 		1F4898BC1DE33DAD0077D8DE /* TagLayoutDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TagLayoutDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1F4898C01DE33DAD0077D8DE /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		1F4898C21DE33DAD0077D8DE /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -141,6 +143,7 @@
 				1F4898F21DE33E0A0077D8DE /* ZFQTagLayout.h */,
 				1F4898F31DE33E0A0077D8DE /* ZFQTagLayout.m */,
 				1FBC14431DEC09A400B62E2C /* tags.json */,
+				1F424F691DF18AC100DC6C8A /* tags copy.json */,
 				1F4898C81DE33DAD0077D8DE /* Main.storyboard */,
 				1F4898CB1DE33DAD0077D8DE /* Assets.xcassets */,
 				1F4898CD1DE33DAD0077D8DE /* LaunchScreen.storyboard */,
@@ -285,6 +288,7 @@
 			files = (
 				1FBC14441DEC09A400B62E2C /* tags.json in Resources */,
 				1F4898CF1DE33DAD0077D8DE /* LaunchScreen.storyboard in Resources */,
+				1F424F6A1DF18AC100DC6C8A /* tags copy.json in Resources */,
 				1F4898CC1DE33DAD0077D8DE /* Assets.xcassets in Resources */,
 				1F4898CA1DE33DAD0077D8DE /* Main.storyboard in Resources */,
 			);

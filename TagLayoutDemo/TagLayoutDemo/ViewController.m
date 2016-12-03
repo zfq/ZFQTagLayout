@@ -83,7 +83,6 @@
         } break;
         case UIGestureRecognizerStateEnded: {
             [tmpView endInteractiveMovement];
-//            [tmpView reloadData];
         }  break;
         default:
             [tmpView cancelInteractiveMovement];
@@ -114,15 +113,14 @@
     id source = _testArray[fromIndexPath.row];
     [_testArray removeObjectAtIndex:fromIndexPath.row];
     [_testArray insertObject:source atIndex:toIndexPath.row];
-//    [_testArray exchangeObjectAtIndex:fromIndexPath.row withObjectAtIndex:toIndexPath.row];
 }
 
 - (void)didMoveItemAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath
 {
-    NSLog(@"完成排序");
-    for (NSString *str in _testArray) {
-        NSLog(@"%@",str);
-    }
+//    NSLog(@"完成排序");
+//    for (NSString *str in _testArray) {
+//        NSLog(@"%@",str);
+//    }
 }
 
 #pragma mark - UICollectionViewDatasource

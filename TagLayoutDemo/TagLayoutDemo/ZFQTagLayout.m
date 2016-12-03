@@ -332,11 +332,7 @@
     //2.重新计算attr
     [self calculateLayoutAttributes];
     //3.更新UI：删除旧的item, 在新的地方insert一个item
-    [collectionView performBatchUpdates:^{
-        [collectionView moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
-    } completion:^(BOOL finished) {
-        
-    }];
+    [collectionView moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
     _originSelectedIndexPath = indexPath;
     _preAvailableRow = indexPath.row;
 }
