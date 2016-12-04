@@ -21,7 +21,6 @@
     CGSize _offset;
     NSInteger _preAvailableRow;
 }
-
 @end
 
 @implementation ZFQTagLayout
@@ -322,7 +321,7 @@
     _snapshotView.center = CGPointMake(p.x + _offset.width, p.y + _offset.height);
     
     UICollectionView *collectionView = self.collectionView;
-    NSIndexPath *indexPath = [collectionView indexPathForItemAtPoint:p];
+    NSIndexPath *indexPath = [collectionView indexPathForItemAtPoint:_snapshotView.center];
     if (!indexPath) return;
     if (indexPath.row == _preAvailableRow) return;
     if (_originSelectedIndexPath.row == indexPath.row) return;
@@ -332,6 +331,8 @@
     //2.重新计算attr
     [self calculateLayoutAttributes];
     //3.更新UI：删除旧的item, 在新的地方insert一个item
+    
+//    NSLog(@"%ld->%ld",_originSelectedIndexPath.row,indexPath.row);
     [collectionView moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
     _originSelectedIndexPath = indexPath;
     _preAvailableRow = indexPath.row;
