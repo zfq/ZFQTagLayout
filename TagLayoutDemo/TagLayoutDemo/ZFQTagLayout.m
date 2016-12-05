@@ -7,6 +7,12 @@
 //
 
 #import "ZFQTagLayout.h"
+
+typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
+    ZFQTagScrollDirectionUp,    //向上滚动
+    ZFQTagScrollDirectionDown   //向下滚动
+};
+
 @interface ZFQTagLayout()
 {
     CGSize _contentSize;
@@ -16,11 +22,18 @@
     NSMutableArray<NSArray *> *_itemsInfo;
     
     UILongPressGestureRecognizer *_longPressGesture;
-    UIView *_snapshotView;
-    NSIndexPath *_originSelectedIndexPath;   //选中的row
+    
     CGSize _offset;
     NSInteger _preAvailableRow;
+    BOOL _isMoving; //判断是否正在滚动
+    CADisplayLink *_displayLink;
+    ZFQTagScrollDirection _scrollDirection;   //滚动方向 1：向上滚动   2：向下滚动
+    CGFloat _scrollSpeed;
 }
+
+@property (nonatomic,strong) UIView *snapshotView;
+@property (nonatomic,strong) NSIndexPath *originSelectedIndexPath;   //选中的row
+
 @end
 
 @implementation ZFQTagLayout
@@ -30,6 +43,7 @@
     self = [super init];
     if (self) {
         _preAvailableRow = -1;
+        _scrollSpeed = 200.f;
     }
     return self;
 }
@@ -171,6 +185,9 @@
     [array enumerateObjectsUsingBlock:^(UICollectionViewLayoutAttributes * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         if (CGRectIntersectsRect(rect, obj.frame)) {
             [mutableArray addObject:obj];
+//            if (_originSelectedIndexPath && obj.indexPath.row == _originSelectedIndexPath.row) {
+//                obj.hidden = YES;
+//            }
         }
     }];
     return mutableArray;
@@ -308,6 +325,8 @@
     
     //然后将选中的cell给隐藏掉
     cell.hidden = YES;
+//    UICollectionViewLayoutAttributes *attr = [self layoutAttributesForItemAtIndexPath:_originSelectedIndexPath];
+//    attr.hidden = YES;
     
     _originSelectedIndexPath = indexPath;
     
@@ -318,9 +337,30 @@
 
 - (void)ZFQUpdateMovementTargetPosition:(CGPoint)p
 {
+    if (_isMoving) {
+        return;
+    }
     _snapshotView.center = CGPointMake(p.x + _offset.width, p.y + _offset.height);
     
     UICollectionView *collectionView = self.collectionView;
+    
+    //要移动的cell在底部，需要向上滚动
+    BOOL needScroll = collectionView.contentOffset.y + collectionView.frame.size.height < _contentSize.height;
+    if (_snapshotView.center.y >= collectionView.frame.size.height && needScroll) {
+        //开始滚动collectionView
+        NSLog(@"开始向上滚动");
+        [self beginScrollWithDirection:ZFQTagScrollDirectionUp];
+        return;
+    }
+    
+    //要移动的cell在顶部，需要向下滚动
+    if ((_snapshotView.center.y - collectionView.contentOffset.y)<= 0 && collectionView.contentOffset.y > 0) {
+        //开始滚动collectionView
+        NSLog(@"开始向下滚动");
+        [self beginScrollWithDirection:ZFQTagScrollDirectionDown];
+        return;
+    }
+    
     NSIndexPath *indexPath = [collectionView indexPathForItemAtPoint:_snapshotView.center];
     if (!indexPath) return;
     if (indexPath.row == _preAvailableRow) return;
@@ -331,45 +371,103 @@
     //2.重新计算attr
     [self calculateLayoutAttributes];
     //3.更新UI：删除旧的item, 在新的地方insert一个item
-    
-//    NSLog(@"%ld->%ld",_originSelectedIndexPath.row,indexPath.row);
     [collectionView moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
     _originSelectedIndexPath = indexPath;
     _preAvailableRow = indexPath.row;
 }
 
+- (void)beginScrollWithDirection:(ZFQTagScrollDirection)scrollDirection
+{
+    if (_isMoving) {
+        return;
+    }
+    _scrollDirection = scrollDirection;
+    _isMoving = YES;
+    //如果没有开启定时器，则开启定时器
+    if (!_displayLink) {
+        _displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(displaylinkAction:)];
+        [_displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+    }
+}
+
+- (void)stopScroll
+{
+    //停止滚动
+    [_displayLink invalidate];
+    _displayLink = nil;
+    
+    _isMoving = NO;
+}
+
+- (void)displaylinkAction:(CADisplayLink *)displayLink
+{
+    UICollectionView *collectionView = self.collectionView;
+    //设置contentOffset
+    CGFloat originOffsetY = collectionView.contentOffset.y;
+    //判断滚动方向 是往上滚动还是往下滚动
+    CGFloat delta = 0;
+    if (_scrollDirection == ZFQTagScrollDirectionUp) {
+        //向上滚动
+        if (originOffsetY + collectionView.frame.size.height < _contentSize.height) {
+            delta = _scrollSpeed * displayLink.duration;
+        } else {
+            [self stopScroll];
+        }
+    } else if (_scrollDirection == ZFQTagScrollDirectionDown) {
+        //向下滚动
+        if (originOffsetY > 0) {
+            delta = -_scrollSpeed * displayLink.duration;
+        } else {
+            [self stopScroll];
+        }
+    }
+    
+    _snapshotView.center = CGPointMake(_snapshotView.center.x, _snapshotView.center.y + delta);
+    collectionView.contentOffset = CGPointMake(0, originOffsetY + delta);
+}
+
 - (void)ZFQEndMovementTargetPosition:(CGPoint)p
 {
+    [self stopScroll];
+    
     UICollectionView *collectionView = self.collectionView;
     NSIndexPath *indexPath = [collectionView indexPathForItemAtPoint:p];
     if (!indexPath) {
         [self ZFQCancelMovement];
         return;
     }
-
+    
+    NSLog(@"stop!");
     //1.将截图放置到新的位置(动画效果)
     [UIView animateWithDuration:0.25 animations:^{
        _snapshotView.center = _allLayoutAttributes[indexPath.row].center;
     }];
     //2.在移动动画完成后就移除截图
+    __weak typeof(self) weakSelf = self;
     [collectionView performBatchUpdates:^{
 
     } completion:^(BOOL finished) {
         //3.移除截图
-        UIView *cell = [collectionView cellForItemAtIndexPath:_originSelectedIndexPath];
+        UIView *cell = [weakSelf.collectionView cellForItemAtIndexPath:weakSelf.originSelectedIndexPath];
         cell.hidden = NO;
+//        UICollectionViewLayoutAttributes *attr = [self layoutAttributesForItemAtIndexPath:_originSelectedIndexPath];
+//        attr.hidden = NO;
+//        [weakSelf invalidateLayout];
         
-        [_snapshotView removeFromSuperview];
-        _snapshotView = nil;
+        [weakSelf.snapshotView removeFromSuperview];
+        weakSelf.snapshotView = nil;
         
-        if ([self.layoutDelegate respondsToSelector:@selector(didMoveItemAtIndexPath:toIndexPath:)]) {
-            [self.layoutDelegate didMoveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
+        if ([weakSelf.layoutDelegate respondsToSelector:@selector(didMoveItemAtIndexPath:toIndexPath:)]) {
+            [weakSelf.layoutDelegate didMoveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
         }
+        _originSelectedIndexPath = nil;
     }];
 }
 
 - (void)ZFQCancelMovement
 {
+    [self stopScroll];
+    
     UICollectionViewLayoutAttributes *attr = _allLayoutAttributes[_originSelectedIndexPath.row];
     UIView *cell = [self.collectionView cellForItemAtIndexPath:_originSelectedIndexPath];
     
