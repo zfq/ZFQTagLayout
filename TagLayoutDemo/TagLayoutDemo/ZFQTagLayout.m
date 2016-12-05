@@ -450,6 +450,7 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
         //3.移除截图
         UIView *cell = [weakSelf.collectionView cellForItemAtIndexPath:weakSelf.originSelectedIndexPath];
         cell.hidden = NO;
+        
 //        UICollectionViewLayoutAttributes *attr = [self layoutAttributesForItemAtIndexPath:_originSelectedIndexPath];
 //        attr.hidden = NO;
 //        [weakSelf invalidateLayout];
@@ -482,6 +483,7 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
             [_snapshotView removeFromSuperview];
             _snapshotView = nil;
             _preAvailableRow = -1;
+            _originSelectedIndexPath = nil;
         }
     }];
 }
