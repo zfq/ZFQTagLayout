@@ -321,7 +321,8 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
             [self ZFQUpdateMovementTargetPosition:p];
         } break;
         case UIGestureRecognizerStateEnded: {
-//            [self ZFQEndMovementTargetPosition:p];
+            [self ZFQEndMovementTargetPosition:p];
+            NSLog(@"pan手势End");
         }  break;
         default:
 //            [self ZFQCancelMovement];
@@ -343,6 +344,7 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
         } break;
         case UIGestureRecognizerStateEnded: {
 //            [self ZFQEndMovementTargetPosition:p];
+            NSLog(@"长按手势End");
         }  break;
         default:
 //            [self ZFQCancelMovement];
