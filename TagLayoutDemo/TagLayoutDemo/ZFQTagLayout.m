@@ -13,14 +13,15 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     ZFQTagScrollDirectionDown   //向下滚动
 };
 
-@interface ZFQTagLayout()
+@interface ZFQTagLayout() <UIGestureRecognizerDelegate>
 {
     CGSize _contentSize;
     
     NSMutableArray<UICollectionViewCell *> *_allItems;
     NSMutableArray<NSArray *> *_itemsInfo;
     
-    UILongPressGestureRecognizer *_longPressGesture;
+    
+    UIPanGestureRecognizer *_panGesture;
     
     CGSize _offset;
     BOOL _isMoving; //判断是否正在滚动
@@ -32,6 +33,7 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
 @property (nonatomic, strong) UIView *snapshotView;
 @property (nonatomic, strong) NSIndexPath *originSelectedIndexPath;   //选中的row
 @property (nonatomic, strong) NSMutableArray<UICollectionViewLayoutAttributes *> *allLayoutAttributes;
+@property (nonatomic, strong) UILongPressGestureRecognizer *longPressGesture;
 
 @end
 
@@ -297,6 +299,33 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     if (!_longPressGesture) {
         _longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPressGesture:)];
         [self.collectionView addGestureRecognizer:_longPressGesture];
+        _longPressGesture.delegate = self;
+    }
+    
+    if (!_panGesture) {
+        _panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panGesture:)];
+        [self.collectionView addGestureRecognizer:_panGesture];
+        _panGesture.delegate = self;
+    }
+}
+
+- (void)panGesture:(UIPanGestureRecognizer *)gesture
+{
+    UICollectionView *tmpView = (UICollectionView *)gesture.view;
+    CGPoint p = [gesture locationInView:tmpView];
+    switch (gesture.state) {
+        case UIGestureRecognizerStateBegan: {
+//            [self ZFQBeginMovementFromPositon:p];
+        } break;
+        case UIGestureRecognizerStateChanged: {
+            [self ZFQUpdateMovementTargetPosition:p];
+        } break;
+        case UIGestureRecognizerStateEnded: {
+//            [self ZFQEndMovementTargetPosition:p];
+        }  break;
+        default:
+//            [self ZFQCancelMovement];
+            break;
     }
 }
 
@@ -306,18 +335,25 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     CGPoint p = [gesture locationInView:tmpView];
     switch (gesture.state) {
         case UIGestureRecognizerStateBegan: {
+            NSLog(@"识别长按收拾");
             [self ZFQBeginMovementFromPositon:p];
         } break;
         case UIGestureRecognizerStateChanged: {
-            [self ZFQUpdateMovementTargetPosition:p];
+//            [self ZFQUpdateMovementTargetPosition:p];
         } break;
         case UIGestureRecognizerStateEnded: {
-            [self ZFQEndMovementTargetPosition:p];
+//            [self ZFQEndMovementTargetPosition:p];
         }  break;
         default:
-            [self ZFQCancelMovement];
+//            [self ZFQCancelMovement];
             break;
     }
+}
+
+#pragma mark - Gesture delegate
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
+{
+    return YES;
 }
 
 - (void)ZFQBeginMovementFromPositon:(CGPoint)p
@@ -329,6 +365,10 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     _snapshotView.frame = cell.frame;
     [self.collectionView addSubview:_snapshotView];
     
+    [UIView animateWithDuration:0.25 animations:^{
+        _snapshotView.transform = CGAffineTransformMakeScale(1.1, 1.1);
+    }];
+    
     //然后将选中的cell给隐藏掉
 //    cell.hidden = YES;
     
@@ -338,6 +378,7 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     _offset = CGSizeMake(center.x - p.x, center.y - p.y);
     
     [self invalidateLayout];
+    NSLog(@"开始移动");
 }
 
 - (void)ZFQUpdateMovementTargetPosition:(CGPoint)p
@@ -369,12 +410,16 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     NSIndexPath *indexPath = [collectionView indexPathForItemAtPoint:_snapshotView.center];
     if (!indexPath) return;
     if (_originSelectedIndexPath.row == indexPath.row) return;
-
+    
+    NSIndexPath *preIndexPath = _originSelectedIndexPath;
+    
     //1.更新数据源，就是把 _originSelectedIndexPath 删除掉，然后 将其插入到indexPath
     [self.layoutDelegate moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
+    
+    _originSelectedIndexPath = indexPath;
     //2.重新计算attr
 //    [self calculateLayoutAttributes];
-    [self invalidateLayout];
+//    [self invalidateLayout];
 //    NSLog(@"交换后");
 //    [self debugAttr];
     //3.更新UI：删除旧的item, 在新的地方insert一个item
@@ -383,11 +428,14 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     __weak typeof(self) weakSelf = self;
     _longPressGesture.enabled = NO;
     [collectionView performBatchUpdates:^{
-        [collectionView moveItemAtIndexPath:weakSelf.originSelectedIndexPath toIndexPath:indexPath];
+//        [collectionView moveItemAtIndexPath:preIndexPath toIndexPath:indexPath];
+        NSLog(@"%ld->%ld",preIndexPath.row,indexPath.row);
+        [weakSelf.collectionView deleteItemsAtIndexPaths:@[preIndexPath]];
+        [weakSelf.collectionView insertItemsAtIndexPaths:@[indexPath]];
     } completion:^(BOOL finished) {
         if (finished) {
-            weakSelf.originSelectedIndexPath = indexPath;
-            _longPressGesture.enabled = YES;
+//            weakSelf.originSelectedIndexPath = indexPath;
+            weakSelf.longPressGesture.enabled = YES;
         }
     }];
 }
