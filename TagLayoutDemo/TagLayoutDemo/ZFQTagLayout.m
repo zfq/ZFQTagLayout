@@ -18,21 +18,20 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     CGSize _contentSize;
     
     NSMutableArray<UICollectionViewCell *> *_allItems;
-    NSMutableArray<UICollectionViewLayoutAttributes *> *_allLayoutAttributes;
     NSMutableArray<NSArray *> *_itemsInfo;
     
     UILongPressGestureRecognizer *_longPressGesture;
     
     CGSize _offset;
-    NSInteger _preAvailableRow;
     BOOL _isMoving; //判断是否正在滚动
     CADisplayLink *_displayLink;
     ZFQTagScrollDirection _scrollDirection;   //滚动方向 1：向上滚动   2：向下滚动
     CGFloat _scrollSpeed;
 }
 
-@property (nonatomic,strong) UIView *snapshotView;
-@property (nonatomic,strong) NSIndexPath *originSelectedIndexPath;   //选中的row
+@property (nonatomic, strong) UIView *snapshotView;
+@property (nonatomic, strong) NSIndexPath *originSelectedIndexPath;   //选中的row
+@property (nonatomic, strong) NSMutableArray<UICollectionViewLayoutAttributes *> *allLayoutAttributes;
 
 @end
 
@@ -42,7 +41,6 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
 {
     self = [super init];
     if (self) {
-        _preAvailableRow = -1;
         _scrollSpeed = 200.f;
     }
     return self;
@@ -182,20 +180,28 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     NSArray *array = _allLayoutAttributes;
 //    NSArray *array = [self allVisibleAttributesInRect:rect];
     NSMutableArray *mutableArray = [[NSMutableArray alloc] init];
+    __weak typeof (self) weakSelf = self;
     [array enumerateObjectsUsingBlock:^(UICollectionViewLayoutAttributes * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         if (CGRectIntersectsRect(rect, obj.frame)) {
             [mutableArray addObject:obj];
-//            if (_originSelectedIndexPath && obj.indexPath.row == _originSelectedIndexPath.row) {
-//                obj.hidden = YES;
-//            }
+            [weakSelf tryHideAttr:obj];
         }
     }];
     return mutableArray;
 }
 
+- (void)tryHideAttr:(UICollectionViewLayoutAttributes *)attr
+{
+    if (_originSelectedIndexPath && _originSelectedIndexPath.row == attr.indexPath.row) {
+        attr.hidden = YES;
+    }
+}
+
 - (UICollectionViewLayoutAttributes *)layoutAttributesForItemAtIndexPath:(NSIndexPath *)indexPath
 {
-    return _allLayoutAttributes[indexPath.row];
+    UICollectionViewLayoutAttributes *attr = _allLayoutAttributes[indexPath.row];
+    [self tryHideAttr:attr];
+    return attr;
 }
 
 - (CGSize)collectionViewContentSize
@@ -324,15 +330,14 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     [self.collectionView addSubview:_snapshotView];
     
     //然后将选中的cell给隐藏掉
-    cell.hidden = YES;
-//    UICollectionViewLayoutAttributes *attr = [self layoutAttributesForItemAtIndexPath:_originSelectedIndexPath];
-//    attr.hidden = YES;
+//    cell.hidden = YES;
     
     _originSelectedIndexPath = indexPath;
     
     CGPoint center = _snapshotView.center;
     _offset = CGSizeMake(center.x - p.x, center.y - p.y);
-    _preAvailableRow = -1;
+    
+    [self invalidateLayout];
 }
 
 - (void)ZFQUpdateMovementTargetPosition:(CGPoint)p
@@ -363,19 +368,36 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     
     NSIndexPath *indexPath = [collectionView indexPathForItemAtPoint:_snapshotView.center];
     if (!indexPath) return;
-    if (indexPath.row == _preAvailableRow) return;
     if (_originSelectedIndexPath.row == indexPath.row) return;
-    
+
     //1.更新数据源，就是把 _originSelectedIndexPath 删除掉，然后 将其插入到indexPath
     [self.layoutDelegate moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
     //2.重新计算attr
-    [self calculateLayoutAttributes];
+//    [self calculateLayoutAttributes];
+    [self invalidateLayout];
+//    NSLog(@"交换后");
+//    [self debugAttr];
     //3.更新UI：删除旧的item, 在新的地方insert一个item
-    [collectionView moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
-    _originSelectedIndexPath = indexPath;
-    _preAvailableRow = indexPath.row;
+    NSLog(@"开始动画:%ld->%ld",_originSelectedIndexPath.row,indexPath.row);
+    
+    __weak typeof(self) weakSelf = self;
+    _longPressGesture.enabled = NO;
+    [collectionView performBatchUpdates:^{
+        [collectionView moveItemAtIndexPath:weakSelf.originSelectedIndexPath toIndexPath:indexPath];
+    } completion:^(BOOL finished) {
+        if (finished) {
+            weakSelf.originSelectedIndexPath = indexPath;
+            _longPressGesture.enabled = YES;
+        }
+    }];
 }
 
+- (void)debugAttr
+{
+    for (UICollectionViewLayoutAttributes *attr in _allLayoutAttributes) {
+        NSLog(@"%@",NSStringFromCGSize(attr.frame.size));
+    }
+}
 - (void)beginScrollWithDirection:(ZFQTagScrollDirection)scrollDirection
 {
     if (_isMoving) {
@@ -449,19 +471,15 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     } completion:^(BOOL finished) {
         //3.移除截图
         UIView *cell = [weakSelf.collectionView cellForItemAtIndexPath:weakSelf.originSelectedIndexPath];
-        cell.hidden = NO;
-        
-//        UICollectionViewLayoutAttributes *attr = [self layoutAttributesForItemAtIndexPath:_originSelectedIndexPath];
-//        attr.hidden = NO;
-//        [weakSelf invalidateLayout];
-        
+//        cell.hidden = NO;
+        _originSelectedIndexPath = nil;
+        [weakSelf invalidateLayout];
         [weakSelf.snapshotView removeFromSuperview];
         weakSelf.snapshotView = nil;
         
         if ([weakSelf.layoutDelegate respondsToSelector:@selector(didMoveItemAtIndexPath:toIndexPath:)]) {
             [weakSelf.layoutDelegate didMoveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
         }
-        _originSelectedIndexPath = nil;
     }];
 }
 
@@ -478,12 +496,13 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     } completion:^(BOOL finished) {
         if (finished) {
             //2.设置hidden为NO
-            cell.hidden = NO;
+//            cell.hidden = NO;
+            _originSelectedIndexPath = nil;
+            [self invalidateLayout];
             //3.移除截图
             [_snapshotView removeFromSuperview];
             _snapshotView = nil;
-            _preAvailableRow = -1;
-            _originSelectedIndexPath = nil;
+//            _originSelectedIndexPath = nil;
         }
     }];
 }
