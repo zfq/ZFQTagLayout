@@ -280,7 +280,7 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     }
     
     NSInteger index = [_itemsInfo[left][0] integerValue];
-    CGRect frame = _allLayoutAttributes[index].frame;   //_allLayoutAttributes[left].frame;
+    CGRect frame = _allLayoutAttributes[index].frame;
     if (isBegin) {
         if (y > CGRectGetMaxY(frame)) {
             return -1;
@@ -317,18 +317,13 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     UICollectionView *tmpView = (UICollectionView *)gesture.view;
     CGPoint p = [gesture locationInView:tmpView];
     switch (gesture.state) {
-        case UIGestureRecognizerStateBegan: {
-//            [self ZFQBeginMovementFromPositon:p];
-        } break;
         case UIGestureRecognizerStateChanged: {
             [self ZFQUpdateMovementTargetPosition:p];
         } break;
         case UIGestureRecognizerStateEnded: {
             [self ZFQEndMovementTargetPosition:p];
-            NSLog(@"pan手势End");
         }  break;
         default:
-//            [self ZFQCancelMovement];
             break;
     }
 }
@@ -339,19 +334,12 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     CGPoint p = [gesture locationInView:tmpView];
     switch (gesture.state) {
         case UIGestureRecognizerStateBegan: {
-            NSLog(@"识别长按收拾");
             [self ZFQBeginMovementFromPositon:p];
-        } break;
-        case UIGestureRecognizerStateChanged: {
-//            [self ZFQUpdateMovementTargetPosition:p];
         } break;
         case UIGestureRecognizerStateEnded: {
             [self ZFQEndMovementTargetPosition:p];
-//            [self ZFQCancelMovement];
-            NSLog(@"长按手势End");
         }  break;
         default:
-//            [self ZFQCancelMovement];
             break;
     }
 }
@@ -380,10 +368,8 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
 {
     //为item创建截图，然后添加到collectionView上
     NSIndexPath *indexPath = [self.collectionView indexPathForItemAtPoint:p];
-//    NSIndexPath *indexPath = [self indexPathForItemAtPoint:p];
-    if (!indexPath) {
-        return;
-    }
+    if (!indexPath) return;
+
     UIView *cell = [self.collectionView cellForItemAtIndexPath:indexPath];
     _snapshotView = [cell zfqSnapshotImg];
     _snapshotView.frame = cell.frame;
@@ -394,28 +380,25 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     }];
     
     //然后将选中的cell给隐藏掉
-//    cell.hidden = YES;
-    
     _originSelectedIndexPath = indexPath;
-    
     CGPoint center = _snapshotView.center;
     _offset = CGSizeMake(center.x - p.x, center.y - p.y);
-    
     [self invalidateLayout];
-    NSLog(@"开始移动");
 }
 
 - (void)ZFQUpdateMovementTargetPosition:(CGPoint)p
 {
     _snapshotView.center = CGPointMake(p.x + _offset.width, p.y + _offset.height);
+ 
+    if (_isMoving) {
+        [self stopScroll];
+    }
     
     UICollectionView *collectionView = self.collectionView;
     
     //要移动的cell在底部，需要向上滚动
-    BOOL needScroll = collectionView.contentOffset.y + collectionView.frame.size.height < _contentSize.height;
-    if (_snapshotView.center.y >= collectionView.frame.size.height && needScroll) {
+    if (_isMoving == NO && (_snapshotView.center.y - collectionView.contentOffset.y)>= collectionView.frame.size.height) {
         //开始滚动collectionView
-        NSLog(@"开始向上滚动");
         [self beginScrollWithDirection:ZFQTagScrollDirectionUp];
         return;
     }
@@ -423,19 +406,13 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     //要移动的cell在顶部，需要向下滚动
     if ((_snapshotView.center.y - collectionView.contentOffset.y)<= 0 && collectionView.contentOffset.y > 0) {
         //开始滚动collectionView
-        NSLog(@"开始向下滚动");
         [self beginScrollWithDirection:ZFQTagScrollDirectionDown];
         return;
     }
-    [self stopScroll];
     
-    //--->>>to
     NSIndexPath *indexPath = [collectionView indexPathForItemAtPoint:_snapshotView.center];
     if (!indexPath) return;
-    
-    if (_originSelectedIndexPath != nil && [_originSelectedIndexPath isEqual:indexPath]) {
-        return;
-    }
+    if ([_originSelectedIndexPath isEqual:indexPath]) return;
     
     NSIndexPath *preIndexPath = _originSelectedIndexPath;
     
@@ -453,13 +430,11 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     
     _preToFrame = _allLayoutAttributes[indexPath.row].frame;
     
-    //--->>>>开始移动
     //1.更新数据源，就是把 _originSelectedIndexPath 删除掉，然后 将其插入到indexPath
     [self.layoutDelegate moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
     
     //2.重新计算attr
     [self calculateLayoutAttributes];
-//    [self invalidateLayout];
     
     _originSelectedIndexPath = indexPath;
     //3.更新UI：删除旧的item, 在新的地方insert一个item
@@ -471,7 +446,6 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     } completion:^(BOOL finished) {
         if (finished) {
             weakSelf.longPressGesture.enabled = YES;
-            NSLog(@"动画完成后为:%ld",weakSelf.originSelectedIndexPath.row);
         }
     }];
 }
@@ -496,10 +470,8 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     if (_displayLink && _displayLink.paused == NO) {
         [_displayLink invalidate];
         _displayLink = nil;
-        
         _isMoving = NO;
     }
-    
 }
 
 - (void)displaylinkAction:(CADisplayLink *)displayLink
@@ -541,7 +513,6 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
         return;
     }
     
-    NSLog(@"stop!");
     //1.将截图放置到新的位置(动画效果)
     [UIView animateWithDuration:0.25 animations:^{
        _snapshotView.center = _allLayoutAttributes[indexPath.row].center;
@@ -552,14 +523,14 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
 
     } completion:^(BOOL finished) {
         //3.移除截图
-        _originSelectedIndexPath = nil;
+        weakSelf.originSelectedIndexPath = nil;
         [weakSelf invalidateLayout];
         
         [weakSelf.snapshotView removeFromSuperview];
         weakSelf.snapshotView = nil;
         
         if ([weakSelf.layoutDelegate respondsToSelector:@selector(didMoveItemAtIndexPath:toIndexPath:)]) {
-            [weakSelf.layoutDelegate didMoveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
+            [weakSelf.layoutDelegate didMoveItemAtIndexPath:weakSelf.originSelectedIndexPath toIndexPath:indexPath];
         }
     }];
 }
