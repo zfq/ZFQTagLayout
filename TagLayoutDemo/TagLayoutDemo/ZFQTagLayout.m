@@ -570,7 +570,6 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     _preToFrame = CGRectZero;
     
     UICollectionViewLayoutAttributes *attr = _allLayoutAttributes[_originSelectedIndexPath.row];
-    UIView *cell = [self.collectionView cellForItemAtIndexPath:_originSelectedIndexPath];
     
     //1.将截图恢复到原始位置
     [UIView animateWithDuration:0.25 animations:^{
@@ -578,13 +577,11 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     } completion:^(BOOL finished) {
         if (finished) {
             //2.设置hidden为NO
-//            cell.hidden = NO;
             _originSelectedIndexPath = nil;
             [self invalidateLayout];
             //3.移除截图
             [_snapshotView removeFromSuperview];
             _snapshotView = nil;
-//            _originSelectedIndexPath = nil;
         }
     }];
 }
