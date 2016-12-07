@@ -20,7 +20,6 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     NSMutableArray<UICollectionViewCell *> *_allItems;
     NSMutableArray<NSArray *> *_itemsInfo;
     
-    
     UIPanGestureRecognizer *_panGesture;
     
     CGSize _offset;

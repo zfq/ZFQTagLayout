@@ -10,8 +10,9 @@
 
 @protocol ZFQTagLayoutDelegate <NSObject>
 
+@required
 /**
- This method is used to set the width of UICollectionViewCell at row,
+ This method is used to set the width of UICollectionViewCell at row, You must implment this method
 
  @param row index of UICollectionViewCell
  @return Actual size of UICollectionViewCell, the height will be ignored,
@@ -21,12 +22,25 @@
 
 
 /**
- update datasource,you should exchange both among datasource
-
+ Update datasource,you should exchange both among datasource, normally you can do this as follows
+ 
+    [datasource removeObjectAtIndex:fromIndexPath.row];
+ 
+    [datasource insertObject:source atIndex:toIndexPath.row];
+ 
  @param fromIndexPath The indexPath of the selected cell
  @param toIndexPath IndexPath of the cell can be moved to
  */
 - (void)moveItemAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath;
+
+
+@optional
+/**
+ After movement complet, this method will be called
+
+ @param fromIndexPath the indexPath of cell when your first selected
+ @param toIndexPath the indexPath will be moved
+ */
 - (void)didMoveItemAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath;
 
 @end
