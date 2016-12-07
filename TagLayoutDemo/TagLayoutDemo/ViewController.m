@@ -63,10 +63,6 @@
     NSData *data = [NSData dataWithContentsOfFile:path];
     NSArray *tmpArray = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
     _testArray = [[NSMutableArray alloc] initWithArray:tmpArray];
-    
-    //add long gesture to UICollectionView
-//    _longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPressGesture:)];
-//    [myCollectionView addGestureRecognizer:_longPressGesture];
 }
 
 - (void)longPressGesture:(UIGestureRecognizer *)gesture
