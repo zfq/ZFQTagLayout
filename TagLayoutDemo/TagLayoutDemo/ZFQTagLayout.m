@@ -28,12 +28,15 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     CADisplayLink *_displayLink;
     ZFQTagScrollDirection _scrollDirection;   //滚动方向 1：向上滚动   2：向下滚动
     CGFloat _scrollSpeed;
+    CGRect _preToFrame;
 }
 
 @property (nonatomic, strong) UIView *snapshotView;
 @property (nonatomic, strong) NSIndexPath *originSelectedIndexPath;   //选中的row
+@property (nonatomic, assign) NSInteger fromIndex;
 @property (nonatomic, strong) NSMutableArray<UICollectionViewLayoutAttributes *> *allLayoutAttributes;
 @property (nonatomic, strong) UILongPressGestureRecognizer *longPressGesture;
+@property (nonatomic, assign) BOOL isAnimating; //是否正在执行performBatchUpdate函数
 
 @end
 
@@ -134,9 +137,9 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     }
     
     //拉伸每一行的item的宽度
-    [_itemsInfo enumerateObjectsUsingBlock:^(NSArray * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        [self stretchItemWidthInRange:NSMakeRange([obj[0] integerValue], [obj[1] integerValue])];
-    }];
+//    [_itemsInfo enumerateObjectsUsingBlock:^(NSArray * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+//        [self stretchItemWidthInRange:NSMakeRange([obj[0] integerValue], [obj[1] integerValue])];
+//    }];
     
     //设置contentsize
     CGFloat height = _itemsInfo.count * _itemHeight + (_itemsInfo.count - 1) * _verticalPadding + _edgeInsets.top + _edgeInsets.bottom;
@@ -277,7 +280,8 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
         }
     }
     
-    CGRect frame = _allLayoutAttributes[left].frame;
+    NSInteger index = [_itemsInfo[left][0] integerValue];
+    CGRect frame = _allLayoutAttributes[index].frame;   //_allLayoutAttributes[left].frame;
     if (isBegin) {
         if (y > CGRectGetMaxY(frame)) {
             return -1;
@@ -343,7 +347,8 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
 //            [self ZFQUpdateMovementTargetPosition:p];
         } break;
         case UIGestureRecognizerStateEnded: {
-//            [self ZFQEndMovementTargetPosition:p];
+            [self ZFQEndMovementTargetPosition:p];
+//            [self ZFQCancelMovement];
             NSLog(@"长按手势End");
         }  break;
         default:
@@ -353,15 +358,33 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
 }
 
 #pragma mark - Gesture delegate
-- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
-{
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
+    if ([_panGesture isEqual:gestureRecognizer]) {
+        return (_originSelectedIndexPath != nil);
+    }
     return YES;
+}
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    if ([_longPressGesture isEqual:gestureRecognizer]) {
+        return [_panGesture isEqual:otherGestureRecognizer];
+    }
+    
+    if ([_panGesture isEqual:gestureRecognizer]) {
+        return [_longPressGesture isEqual:otherGestureRecognizer];
+    }
+    
+    return NO;
 }
 
 - (void)ZFQBeginMovementFromPositon:(CGPoint)p
 {
     //为item创建截图，然后添加到collectionView上
     NSIndexPath *indexPath = [self.collectionView indexPathForItemAtPoint:p];
+//    NSIndexPath *indexPath = [self indexPathForItemAtPoint:p];
+    if (!indexPath) {
+        return;
+    }
     UIView *cell = [self.collectionView cellForItemAtIndexPath:indexPath];
     _snapshotView = [cell zfqSnapshotImg];
     _snapshotView.frame = cell.frame;
@@ -388,7 +411,12 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
     if (_isMoving) {
         return;
     }
+    
     _snapshotView.center = CGPointMake(p.x + _offset.width, p.y + _offset.height);
+    
+//    if (self.isAnimating) {
+//        return;
+//    }
     
     UICollectionView *collectionView = self.collectionView;
     
@@ -409,37 +437,158 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
         return;
     }
     
+    //--->>>to
     NSIndexPath *indexPath = [collectionView indexPathForItemAtPoint:_snapshotView.center];
     if (!indexPath) return;
-    if (_originSelectedIndexPath.row == indexPath.row) return;
+    
+    if (_originSelectedIndexPath != nil && [_originSelectedIndexPath isEqual:indexPath]) {
+        return;
+    }
+    
+    self.isAnimating = YES;
     
     NSIndexPath *preIndexPath = _originSelectedIndexPath;
     
+    if (!CGRectIsEmpty(_preToFrame)) {
+        CGRect fromFrame = _preToFrame;
+        CGRect toFrame1 = _allLayoutAttributes[indexPath.row].frame;
+        
+        CGRect unionRect1 = CGRectIntersection(fromFrame, toFrame1);
+        NSLog(@"From:%@,to:%@,union:%@,point:%@",NSStringFromCGRect(fromFrame),NSStringFromCGRect(toFrame1),NSStringFromCGRect(unionRect1),NSStringFromCGPoint(_snapshotView.center));
+        if (!CGRectIsNull(unionRect1)) {
+            if (CGRectContainsPoint(unionRect1, _snapshotView.center)) {
+                return;
+            }
+        }
+    }
+    
+    _preToFrame = _allLayoutAttributes[indexPath.row].frame;
+    
+    //--->>>>开始移动
     //1.更新数据源，就是把 _originSelectedIndexPath 删除掉，然后 将其插入到indexPath
     [self.layoutDelegate moveItemAtIndexPath:_originSelectedIndexPath toIndexPath:indexPath];
     
-    _originSelectedIndexPath = indexPath;
     //2.重新计算attr
-//    [self calculateLayoutAttributes];
+    [self calculateLayoutAttributes];
 //    [self invalidateLayout];
-//    NSLog(@"交换后");
-//    [self debugAttr];
-    //3.更新UI：删除旧的item, 在新的地方insert一个item
-    NSLog(@"开始动画:%ld->%ld",_originSelectedIndexPath.row,indexPath.row);
     
+    _originSelectedIndexPath = indexPath;
+    //3.更新UI：删除旧的item, 在新的地方insert一个item
     __weak typeof(self) weakSelf = self;
     _longPressGesture.enabled = NO;
+    NSLog(@"开始performBatchUpdates");
     [collectionView performBatchUpdates:^{
 //        [collectionView moveItemAtIndexPath:preIndexPath toIndexPath:indexPath];
-        NSLog(@"%ld->%ld",preIndexPath.row,indexPath.row);
         [weakSelf.collectionView deleteItemsAtIndexPaths:@[preIndexPath]];
         [weakSelf.collectionView insertItemsAtIndexPaths:@[indexPath]];
     } completion:^(BOOL finished) {
         if (finished) {
-//            weakSelf.originSelectedIndexPath = indexPath;
             weakSelf.longPressGesture.enabled = YES;
+            weakSelf.isAnimating = NO;
+            NSLog(@"动画完成后为:%ld",weakSelf.originSelectedIndexPath.row);
+            [self debugAttr];
         }
     }];
+}
+
+//判断两个浮点数是否相等
+bool isEqualValue(CGFloat f1,CGFloat f2)
+{
+    return (fabs(f1 - f2) < 0.01f);
+}
+
+//求补集
+CGRect complementRect(CGRect bigRect,CGRect smallRect)
+{
+    if (isEqualValue(bigRect.size.height,smallRect.size.height)) {
+        //认为二者高度相等
+        if (isEqualValue(bigRect.origin.x, smallRect.origin.x)) {
+            return CGRectMake(bigRect.origin.x + smallRect.size.width, bigRect.origin.y, bigRect.size.width - smallRect.size.width, bigRect.size.height);
+        } else if (isEqualValue(CGRectGetMaxX(bigRect),CGRectGetMaxX(smallRect))) {
+            return CGRectMake(bigRect.origin.x, bigRect.origin.y, bigRect.size.width - smallRect.size.width, bigRect.size.height);
+        } else {
+            return CGRectZero;
+        }
+    } else if (fabs(bigRect.size.width - smallRect.size.width) < 0.01f) {
+        //认为二者的宽度相等
+        if (isEqualValue(bigRect.origin.y, smallRect.origin.y)) {
+            return CGRectMake(bigRect.origin.x, bigRect.origin.y + smallRect.size.height, bigRect.size.width, bigRect.size.height - smallRect.size.height);
+        } else if (isEqualValue(CGRectGetMaxY(bigRect),CGRectGetMaxY(smallRect))) {
+            return CGRectMake(bigRect.origin.x, bigRect.origin.y, bigRect.size.width, bigRect.size.height - smallRect.size.height);
+        } else {
+            return CGRectZero;
+        }
+    } else {
+        return CGRectZero;
+    }
+}
+
+- (NSIndexPath *)indexPathForItemAtPoint:(CGPoint)point
+{
+    NSInteger left = 0,right = _itemsInfo.count - 1;
+    CGFloat y = point.y;
+    while (left < right) {
+        NSInteger mid = (left + right)/2;
+        NSInteger index = [_itemsInfo[mid][0] integerValue];
+        CGRect frame = _allLayoutAttributes[index].frame;
+        
+        if (y < frame.origin.y) {
+            right = mid - 1;
+        } else if (y > CGRectGetMaxY(frame)) {
+            left = mid + 1;
+        } else {
+            //找到这一行，在这一行继续二分查找
+            NSInteger column = [self binarySearchAtPoint:point range:NSMakeRange(index, [_itemsInfo[mid][1] integerValue])];
+            if (column == -1) {
+                return nil;
+            } else {
+                return [NSIndexPath indexPathForItem:column inSection:0];
+            }
+        }
+    }
+    
+    NSInteger index = [_itemsInfo[left][0] integerValue];
+    CGRect frame = _allLayoutAttributes[index].frame;
+    
+    if (y < frame.origin.y || y > CGRectGetMaxY(frame)) {
+        return nil;
+    } else {
+        NSInteger column = [self binarySearchAtPoint:point range:NSMakeRange([_itemsInfo[left][0] integerValue], [_itemsInfo[left][1] integerValue])];
+        if (column == -1) {
+            return nil;
+        } else {
+            return [NSIndexPath indexPathForItem:column inSection:0];
+        }
+        return [NSIndexPath indexPathForItem:left inSection:0];
+    }
+
+    return nil;
+}
+
+- (NSInteger)binarySearchAtPoint:(CGPoint)point range:(NSRange)range
+{
+    NSInteger left = range.location,right = left + range.length - 1;
+    CGFloat x = point.x;
+    while (left < right) {
+        NSInteger mid = (left + right)/2;
+        CGRect frame = _allLayoutAttributes[mid].frame;
+        
+        if (x < frame.origin.x) {
+            right = mid - 1;
+        } else if (x > CGRectGetMaxX(frame)) {
+            left = mid + 1;
+        } else {
+            //找到这一行，在这一行继续二分查找
+            return mid;
+        }
+    }
+    
+    CGRect frame = _allLayoutAttributes[left].frame;
+    if (x < frame.origin.x || x > CGRectGetMaxX(frame)) {
+        return -1;
+    } else {
+        return left;
+    }
 }
 
 - (void)debugAttr
@@ -501,6 +650,8 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
 - (void)ZFQEndMovementTargetPosition:(CGPoint)p
 {
     [self stopScroll];
+    _preToFrame = CGRectZero;
+    _isAnimating = NO;
     
     UICollectionView *collectionView = self.collectionView;
     NSIndexPath *indexPath = [collectionView indexPathForItemAtPoint:p];
@@ -536,6 +687,8 @@ typedef NS_ENUM(NSInteger,ZFQTagScrollDirection) {
 - (void)ZFQCancelMovement
 {
     [self stopScroll];
+    _preToFrame = CGRectZero;
+    _isAnimating = NO;
     
     UICollectionViewLayoutAttributes *attr = _allLayoutAttributes[_originSelectedIndexPath.row];
     UIView *cell = [self.collectionView cellForItemAtIndexPath:_originSelectedIndexPath];
