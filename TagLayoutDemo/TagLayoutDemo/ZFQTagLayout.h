@@ -23,11 +23,10 @@
 
 /**
  Update datasource,you should exchange both among datasource, normally you can do this as follows
- 
+    @code
     [datasource removeObjectAtIndex:fromIndexPath.row];
- 
     [datasource insertObject:source atIndex:toIndexPath.row];
- 
+    @endcode
  @param fromIndexPath The indexPath of the selected cell
  @param toIndexPath IndexPath of the cell can be moved to
  */
